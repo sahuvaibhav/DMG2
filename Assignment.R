@@ -7,6 +7,8 @@ names(data) = c('class','capshape','capsurface','capcolor','bruises','odor','gil
                 'veilcolor','ringnumber','ringtype','sporeprintcolor','population','habitat')
 
 attach(data)
+nrow(data)
+levels(data$class)
 data[data$stalkroot == '?',c(12)] = names(which.max(table(data[data$stalkroot != '?',]$stalkroot)))
 
 length(data[data$stalkroot == '?',]$stalkroot)
@@ -45,3 +47,13 @@ p3 = ggplot(aes(x=sporeprintcolor), data=data)+geom_histogram(aes(fill=sporeprin
 p4 = ggplot(aes(x=population), data=data)+geom_histogram(aes(fill=population))
 p5 = ggplot(aes(x=habitat), data=data)+geom_histogram(aes(fill=habitat))
 plot_grid(p1,p2,p3,p4,p5,align = 'h')
+
+#Calculate Information Gain
+library(FSelector)
+infoGain = information.gain(class~.,data=data)
+infoGain.sorted = infoGain[order(infoGain$attr_importance,decreasing = T),, drop=F]
+
+GainRatio = gain.ratio(class~.,data=data)
+GainRatio.sorted = GainRatio[order(GainRatio$attr_importance),, drop=F]
+
+
