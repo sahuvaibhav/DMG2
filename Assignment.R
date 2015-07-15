@@ -56,4 +56,14 @@ infoGain.sorted = infoGain[order(infoGain$attr_importance,decreasing = T),, drop
 GainRatio = gain.ratio(class~.,data=data)
 GainRatio.sorted = GainRatio[order(GainRatio$attr_importance),, drop=F]
 
+x1 = as.numeric(rownames(data[data$class  == 'e',]))
+y1 = sample(x1,replace=F,size = 0.6*length(x1))
+x2 = as.numeric(rownames(data[data$class  == 'p',]))
+y2 = sample(x2,replace=F,size = 0.6*length(x2))
+
+train_data = data[c(y1,y2),]
+val_data = data[c(setdiff(x1,y1),setdiff(x2,y2)),]
+
+
+
 
