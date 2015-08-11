@@ -56,14 +56,49 @@ infoGain.sorted = infoGain[order(infoGain$attr_importance,decreasing = T),, drop
 GainRatio = gain.ratio(class~.,data=data)
 GainRatio.sorted = GainRatio[order(GainRatio$attr_importance),, drop=F]
 
+#==========================================================
 x1 = as.numeric(rownames(data[data$class  == 'e',]))
 y1 = sample(x1,replace=F,size = 0.6*length(x1))
 x2 = as.numeric(rownames(data[data$class  == 'p',]))
 y2 = sample(x2,replace=F,size = 0.6*length(x2))
 
-train_data = data[c(y1,y2),]
-val_data = data[c(setdiff(x1,y1),setdiff(x2,y2)),]
+xTrain = data[c(y1,y2),-1]
+yTrain = data[c(y1,y2),1]
+xTest = data[c(setdiff(x1,y1),setdiff(x2,y2)),-1]
+yTest = data[c(setdiff(x1,y1),setdiff(x2,y2)),1]
+
+Train = data[c(y1,y2),]
+Test = data[c(setdiff(x1,y1),setdiff(x2,y2)),]
+#==========================================================
+
+trainIndex <- createDataPartition(data$class, p=0.60, list=FALSE)
+data_train <- data[trainIndex,]
+data_test <- data[-trainIndex,]
+
+model <- naiveBayes(class ~ ., data = data_train)
+predictions <- predict(model, data_test[,2:23])
+confusionMatrix(predictions, data_test$class)
 
 
+#model = train(xTrain,yTrain,'nb',trControl=trainControl(method='cv',number=10))
+#prop.table(table(predict(model$finalModel,xTest)$class,yTest))
 
+k_top_5 = rownames(head(infoGain.sorted,5))
+
+data_train_5 = data_train[,c('class',k_top_5)]
+data_test_5 = data_test[,c('class',k_top_5)]
+
+model_5 <- naiveBayes(class ~ ., data = data_train_5)
+predictions_5 <- predict(model_5, data_test[,2:6])
+confusionMatrix(predictions_5, data_test$class)
+
+
+k_top_10 = rownames(head(infoGain.sorted,10))
+
+data_train_10 = data_train[,c('class',k_top_10)]
+data_test_10 = data_test[,c('class',k_top_10)]
+
+model_10 <- naiveBayes(class ~ ., data = data_train_10)
+predictions_10 <- predict(model_10, data_test[,2:11])
+confusionMatrix(predictions_5, data_test$class)
 
