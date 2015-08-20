@@ -69,11 +69,13 @@ yTest = data[c(setdiff(x1,y1),setdiff(x2,y2)),1]
 
 Train = data[c(y1,y2),]
 Test = data[c(setdiff(x1,y1),setdiff(x2,y2)),]
-#==========================================================
+
 
 trainIndex <- createDataPartition(data$class, p=0.60, list=FALSE)
 data_train <- data[trainIndex,]
 data_test <- data[-trainIndex,]
+
+#==================================Naive Bayes Classification ========================
 
 model <- naiveBayes(class ~ ., data = data_train)
 predictions <- predict(model, data_test[,2:23])
@@ -101,4 +103,79 @@ data_test_10 = data_test[,c('class',k_top_10)]
 model_10 <- naiveBayes(class ~ ., data = data_train_10)
 predictions_10 <- predict(model_10, data_test[,2:11])
 confusionMatrix(predictions_5, data_test$class)
+
+
+#==================================Decision Tree ================================================
+
+library(party)
+library(rpart)
+library(rattle)
+library(rpart.plot)
+library(RColorBrewer)
+tree = rpart(class ~ ., data = data_train, method = "class",control = rpart.control(cp = 0.005,minsplit=5))
+plot(tree)
+text(tree,pretty = 0)
+fancyRpartPlot(tree)
+printcp(tree)
+plotcp(tree)
+#new.fit <- prp(tree,snip=TRUE)$obj
+ptree<- prune(tree,cp= tree$cptable[which.min(tree$cptable[,"xerror"]),"CP"])
+fancyRpartPlot(ptree, uniform=TRUE,main="Pruned Classification Tree")
+table(predict(ptree,data_test,type ='class'),data_test$class)
+1-mean(predict(ptree,data_test,type ='class') == data_test$class)
+summary(tree)
+
+
+tree1 = ctree(class~.,data= data_train)
+print(tree1)
+plot(tree1)
+plot(ptree,type = "simple")
+table(predict(tree1,data_test), data_test$class)
+1-mean(predict(tree1,data_test) == data_test$class)
+summary(tree1)
+
+
+
+tree2 = tree(class~.,data= data_train)
+summary(tree2)
+plot(tree2)
+text(tree2)
+table(predict(tree2,data_test,type = 'class'), data_test$class)
+1-mean(predict(tree2,data_test) == data_test$class)
+
+
+library(evtree)
+ev.raw = evtree(class~.,data= data_train)
+plot(ev.raw)
+table(predict(ev.raw,data_test), data_test$class)
+1-mean(predict(ev.raw,data_test) == data_test$class)
+summary(ev.raw)
+
+
+#==================================== Knn ==================================================
+library(class)
+set.seed(1234)
+
+ind <- sample(2, nrow(iris), replace=TRUE, prob=c(0.67, 0.33))
+
+iris.training <- iris[ind==1, 1:4]
+iris.test <- iris[ind==2, 1:4]
+iris.trainLabels <- iris[ind==1, 5]
+iris.testLabels <- iris[ind==2, 5]
+
+pred <- knn(train =data_train[,c(2:23)], test = data_test[,c(2:23)] ,cl = factor(data_train[,1]), k=1,prob = FALSE, use.all = TRUE)
+
+iris_pred
+
+library(gmodels)
+
+CrossTable(x = iris.testLabels, y = iris_pred, prop.chisq=FALSE)
+
+
+#==================== RWeka ============================
+library(RWeka)
+classifier <- IBk(class ~ ., data = data_train, control = Weka_control(K = 5, X = TRUE))
+evaluate_Weka_classifier(classifier, numFolds = 10)
+table(predict(classifier,data_test), data_test$class)
+1-mean(predict(classifier,data_test) == data_test$class)
 
