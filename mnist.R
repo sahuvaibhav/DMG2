@@ -165,21 +165,22 @@ names(data_accuracy) = c("Class_1","Class_2","Acc_All","Acc_LDA","Acc_PCA")
 write.csv(data_accuracy,"Log_reg_Acc.csv",row.names =F)
 
 #===============================Knn==================================================
-data_sample = data.frame()
+data_sample_train = data.frame()
+data_sample_test = data.frame()
 for(i in seq(0,9,by=1)){
   n_rows = as.numeric(row.names(data_filtered[data_filtered$class == i,]))
   n_train = sample(as.numeric(row.names(data_filtered[data_filtered$class == i,])),50)
-  n_test = sample(setdiff(n_rows,n_sample),50)
+  n_test = sample(setdiff(n_rows,n_train),50)
   
   data_sample_train  = rbind(data_sample_train,data_filtered[n_train,])
   data_sample_test  = rbind(data_sample_test,data_filtered[n_test,])
 }
 
 #No Transformation 
-mnist_knn_1 <- knn(train = data_sample_train[,c(1:784)], test = data_sample_test[c(1:784)], cl = data_sample_train$class, k=1)
-mnist_knn_3 <- knn(train = data_sample_train[,c(1:784)], test = data_sample_test[c(1:784)], cl = data_sample_train$class, k=3)
-mnist_knn_5 <- knn(train = data_sample_train[,c(1:784)], test = data_sample_test[c(1:784)], cl = data_sample_train$class, k=5)
-mnist_knn_7 <- knn(train = data_sample_train[,c(1:784)], test = data_sample_test[c(1:784)], cl = data_sample_train$class, k=7)
+mnist_knn_1 <- knn(train = data_sample_train[,c(1:719)], test = data_sample_test[c(1:719)], cl = data_sample_train$class, k=1)
+mnist_knn_3 <- knn(train = data_sample_train[,c(1:719)], test = data_sample_test[c(1:719)], cl = data_sample_train$class, k=3)
+mnist_knn_5 <- knn(train = data_sample_train[,c(1:719)], test = data_sample_test[c(1:719)], cl = data_sample_train$class, k=5)
+mnist_knn_7 <- knn(train = data_sample_train[,c(1:719)], test = data_sample_test[c(1:719)], cl = data_sample_train$class, k=7)
 
 predict_1 <- confusionMatrix(data_sample_test$class, mnist_knn_1)
 acc_1 = (predict_1$overall["Accuracy"])
@@ -203,16 +204,16 @@ lda_knn_3 <- knn(train = lda_knn_train_pred, test = lda_knn_test_pred, cl = data
 lda_knn_5 <- knn(train = lda_knn_train_pred, test = lda_knn_test_pred, cl = data_sample_train$class, k=5)
 lda_knn_7 <- knn(train = lda_knn_train_pred, test = lda_knn_test_pred, cl = data_sample_train$class, k=7)
 
-lda_predict_1 <- confusionMatrix(data_sample_test$class, mnist_knn_1)
+lda_predict_1 <- confusionMatrix(data_sample_test$class, lda_knn_1)
 lda_acc_1 = (lda_predict_1$overall["Accuracy"])
 
-lda_predict_3 <- confusionMatrix(data_sample_test$class, mnist_knn_3)
+lda_predict_3 <- confusionMatrix(data_sample_test$class, lda_knn_3)
 lda_acc_3 = (lda_predict_3$overall["Accuracy"])
 
-lda_predict_5 <- confusionMatrix(data_sample_test$class, mnist_knn_5)
+lda_predict_5 <- confusionMatrix(data_sample_test$class, lda_knn_5)
 lda_acc_5 = (lda_predict_5$overall["Accuracy"])
 
-lda_predict_7 <- confusionMatrix(data_sample_test$class, mnist_knn_7)
+lda_predict_7 <- confusionMatrix(data_sample_test$class, lda_knn_7)
 lda_acc_7 = (lda_predict_7$overall["Accuracy"])
 
 
@@ -228,16 +229,16 @@ Pca_knn_3 <- knn(train = PC_knn_train, test = PC_knn_test, cl = data_sample_trai
 Pca_knn_5 <- knn(train = PC_knn_train, test = PC_knn_test, cl = data_sample_train$class, k=5)
 Pca_knn_7 <- knn(train = PC_knn_train, test = PC_knn_test, cl = data_sample_train$class, k=7)
 
-Pca_predict_1 <- confusionMatrix(data_sample_test$class, mnist_knn_1)
+Pca_predict_1 <- confusionMatrix(data_sample_test$class, Pca_knn_1)
 Pca_acc_1 = (lda_predict_1$overall["Accuracy"])
 
-Pca_predict_3 <- confusionMatrix(data_sample_test$class, mnist_knn_3)
+Pca_predict_3 <- confusionMatrix(data_sample_test$class, Pca_knn_3)
 Pca_acc_3 = (lda_predict_3$overall["Accuracy"])
 
-Pca_predict_5 <- confusionMatrix(data_sample_test$class, mnist_knn_5)
+Pca_predict_5 <- confusionMatrix(data_sample_test$class, Pca_knn_5)
 Pca_acc_5 = (lda_predict_5$overall["Accuracy"])
 
-Pca_predict_7 <- confusionMatrix(data_sample_test$class, mnist_knn_7)
+Pca_predict_7 <- confusionMatrix(data_sample_test$class, Pca_knn_7)
 Pca_acc_7 = (lda_predict_7$overall["Accuracy"])
 
 data_knn_acc = data.frame(c(1,3,5,7),c(acc_1,acc_3,acc_5,acc_7),c(lda_acc_1,lda_acc_3,lda_acc_5,lda_acc_7),c(Pca_acc_1,Pca_acc_3,Pca_acc_5,Pca_acc_7))
@@ -255,7 +256,7 @@ for(i in seq(0,8,by=1)){
     data_nb_train <- data_temp[trainIndex,]
     data_nb_test <- data_temp[-trainIndex,]
     model <- naiveBayes(class ~ ., data = data_nb_train)
-    predic_nb <- predict(model, data_nb_test[,1:784])
+    predic_nb <- predict(model, data_nb_test[,c(1:719)])
     acc_all = confusionMatrix(predic_nb, data_nb_test$class)$overall["Accuracy"]
     
     lda_nb_train_pred <- as.data.frame(predict(MNIST.lda,data_nb_train)$x)
