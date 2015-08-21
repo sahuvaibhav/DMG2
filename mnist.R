@@ -248,6 +248,7 @@ write.csv(data_knn_acc,"knn_Acc.csv",row.names =F)
 
 #==============================Bayesian Classifier ============================================
 data_nb_accuracy = data.frame()
+row=1
 for(i in seq(0,8,by=1)){
   for(j in seq(i+1,9,by=1)){
     print(paste(i,j,sep = "-"))
@@ -255,10 +256,24 @@ for(i in seq(0,8,by=1)){
     trainIndex <- createDataPartition(data_temp$class, p=0.60, list=FALSE)
     data_nb_train <- data_temp[trainIndex,]
     data_nb_test <- data_temp[-trainIndex,]
+    
+    print("PCA")
+    PC_nb_train = predict(trans, data_nb_train)
+    PC_nb_train_pred = cbind(PC_nb_train[,c(1:9)], data_nb_train$class)
+    names(PC_nb_train_pred)[10] = 'class'
+    PC_nb_test_pred <- predict(trans,data_nb_test)
+    PC_nb_train_pred$class = factor(PC_nb_train_pred$class)
+    model <- naiveBayes(class ~ ., data = PC_nb_train_pred)
+    predic_nb <- predict(model, PC_nb_test_pred)
+    acc_pca = confusionMatrix(predic_nb, data_nb_test$class)$overall["Accuracy"]
+    
+    print("All")  
+    data_nb_train$class = factor(data_nb_train$class)
     model <- naiveBayes(class ~ ., data = data_nb_train)
-    predic_nb <- predict(model, data_nb_test[,c(1:719)])
+    predic_nb <- predict(model, data_nb_test[,-c(720)])
     acc_all = confusionMatrix(predic_nb, data_nb_test$class)$overall["Accuracy"]
     
+    print("LDA")
     lda_nb_train_pred <- as.data.frame(predict(MNIST.lda,data_nb_train)$x)
     lda_nb_train_pred = cbind(lda_nb_train_pred,data_nb_train$class)
     names(lda_nb_train_pred)[10] = 'class'
@@ -266,17 +281,7 @@ for(i in seq(0,8,by=1)){
     model_lda <- naiveBayes(class ~ ., data = lda_nb_train_pred)
     predic_nb <- predict(model_lda, lda_nb_test_pred)
     acc_lda = confusionMatrix(predic_nb, data_nb_test$class)$overall["Accuracy"]
-    
-    data_nb_train$class = as.numeric(data_nb_train$class)
-    data_nb_test$class = as.numeric(data_nb_test$class)
-    PC_nb_train = predict(trans, data_nb_train)
-    PC_nb_train_pred = cbind(PC_nb_train[,c(1:9)], data_nb_train$class)
-    names(PC_nb_train_pred)[10] = 'class'
-    PC_nb_test_pred <- predict(trans,data_nb_test)
-    model <- naiveBayes(class ~ ., data = PC_nb_train_pred)
-    predic_nb <- predict(model, PC_nb_test_pred)
-    acc_pca = confusionMatrix(predic_nb, PC_nb_test_pred$class)$overall["Accuracy"]
-    
+
     data_nb_accuracy[row,1] = i
     data_nb_accuracy[row,2] = j
     data_nb_accuracy[row,3] = acc_all
