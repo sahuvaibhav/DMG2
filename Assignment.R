@@ -1,4 +1,4 @@
-setwd("C:\\Users\\Vaibhav\\Desktop\\ISB\\DMG2")
+setwd("F:\\Analytics\\ISB Study\\DM2\\DMG2\\")
 
 data = read.table("mushroom.txt",sep = ',',na.strings = "NA", stringsAsFactors=T)
 names(data) = c('class','capshape','capsurface','capcolor','bruises','odor','gillattachment',
@@ -153,29 +153,38 @@ summary(ev.raw)
 
 
 #==================================== Knn ==================================================
-library(class)
-set.seed(1234)
+myKnn = function(train,test,class,k){
+  if(ncol(train)!=ncol(test)){
+    print("Number of features in train and test datasets should be same.")
+  }
+  else if(nrow(train)!= length(class)){
+    print("Number of classse and number of rows in train datasets should be same.")
+  } else {
+    n = ncol(test)
+    y = apply(train,1,function(z){apply(test,1,function(x){sum(x  == z)/n})})
+    
+    NN <- t(apply(y, 1, function(x){order(x,decreasing=T)}))
+    pred <- apply(NN[, 1:k, drop=FALSE], 1, function(nn){
+      tab <- table(class[nn])
+      names(tab)[which.max(tab)]
+    })
+    return(pred)
+  }
+}
 
-ind <- sample(2, nrow(iris), replace=TRUE, prob=c(0.67, 0.33))
+pred = myKnn(data_train[,c(2:23)],data_test[,c(2:23)],data_train$class,k=1)
+accuracy_1 = confusionMatrix(pred, data_test$class)$overall["Accuracy"]
 
-iris.training <- iris[ind==1, 1:4]
-iris.test <- iris[ind==2, 1:4]
-iris.trainLabels <- iris[ind==1, 5]
-iris.testLabels <- iris[ind==2, 5]
+pred = myKnn(data_train[,c(2:23)],data_test[,c(2:23)],data_train$class,k=3)
+accuracy_3 = confusionMatrix(pred, data_test$class)$overall["Accuracy"]
 
-pred <- knn(train =data_train[,c(2:23)], test = data_test[,c(2:23)] ,cl = factor(data_train[,1]), k=1,prob = FALSE, use.all = TRUE)
+pred = myKnn(data_train[,c(2:23)],data_test[,c(2:23)],data_train$class,k=5)
+accuracy_5 = confusionMatrix(pred, data_test$class)$overall["Accuracy"]
 
-iris_pred
+pred = myKnn(data_train[,c(2:23)],data_test[,c(2:23)],data_train$class,k=7)
+accuracy_7 = confusionMatrix(pred, data_test$class)$overall["Accuracy"]
 
-library(gmodels)
+acc_knn = data.frame(c(1,3,5,7),c(accuracy_1,accuracy_3,accuracy_5,accuracy_7))
+names(acc_knn)=c('K','accuracy')
 
-CrossTable(x = iris.testLabels, y = iris_pred, prop.chisq=FALSE)
-
-
-#==================== RWeka ============================
-library(RWeka)
-classifier <- IBk(class ~ ., data = data_train, control = Weka_control(K = 5, X = TRUE))
-evaluate_Weka_classifier(classifier, numFolds = 10)
-table(predict(classifier,data_test), data_test$class)
-1-mean(predict(classifier,data_test) == data_test$class)
-
+write.csv(acc_knn,"mushroom_knn_acc.csv",row.names=F)
