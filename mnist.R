@@ -1,5 +1,10 @@
 install.packages("R.matlab")
 library(R.matlab)
+library(caret)
+library(MASS)
+library(dplyr)
+library(ROCR)
+
 setwd("F:\\Analytics\\ISB Study\\DM2\\DMG2")
 data_MNIST <- readMat('mnist.mat')
 head(data_MNIST)
@@ -17,11 +22,7 @@ for(i in seq(0,9)){
   data_final = rbind(data_final,train,test)
 }
 
-#================ LDA ===================================
-
-library(caret)
-library(MASS)
-library(dplyr)
+#================ Fisher Projection ===================================
 
 #Remove zero variance columns
 x = nearZeroVar(data_final, saveMetrics = TRUE)
@@ -71,7 +72,7 @@ ggplot(mnist_pred,aes(x=mnist_pred$LD1, y=mnist_pred$LD2)) +
   geom_text(label=data_179$class,vjust=1.5) 
 
 
-#===================== PCA ===================================
+#===================== PCA Projection===================================
 
 mnist.pca <- prcomp(data_filtered[,-785],center = TRUE,scale. = TRUE) 
 print(mnist.pca)
@@ -106,7 +107,6 @@ ggplot(mnist_pred,aes(x=PC$PC1, y=PC$PC2)) +
 
 
 #=================== Logistic Regression ========================
-library(ROCR)
 
 data_accuracy =data.frame()
 
@@ -162,9 +162,9 @@ for(i in seq(0,8,by=1)){
 
 names(data_accuracy) = c("Class_1","Class_2","Acc_All","Acc_LDA","Acc_PCA")
 
-write.csv(data_accuracy,"Log_reg_Acc.csv",row.names =F)
+write.csv(data_accuracy,"Mnist_Log_reg.csv",row.names =F)
 
-#===============================Knn==================================================
+#===============================K-Nearest Neighbor==================================================
 data_sample_train = data.frame()
 data_sample_test = data.frame()
 for(i in seq(0,9,by=1)){
@@ -244,7 +244,7 @@ Pca_acc_7 = (lda_predict_7$overall["Accuracy"])
 data_knn_acc = data.frame(c(1,3,5,7),c(acc_1,acc_3,acc_5,acc_7),c(lda_acc_1,lda_acc_3,lda_acc_5,lda_acc_7),c(Pca_acc_1,Pca_acc_3,Pca_acc_5,Pca_acc_7))
 names(data_knn_acc) = c('k','NoTransformation',"LDA(9),","PCA(9)")
 
-write.csv(data_knn_acc,"knn_Acc.csv",row.names =F)
+write.csv(data_knn_acc,"Mnist_knn.csv",row.names =F)
 
 #==============================Bayesian Classifier ============================================
 data_nb_accuracy = data.frame()

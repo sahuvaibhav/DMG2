@@ -1,3 +1,14 @@
+library(e1071)
+library(caret)
+library(FSelector)
+library(ggplot2)
+library(cowplot)
+library(party)
+library(rpart)
+library(rattle)
+library(rpart.plot)
+library(RColorBrewer)
+
 setwd("F:\\Analytics\\ISB Study\\DM2\\DMG2\\")
 
 data = read.table("mushroom.txt",sep = ',',na.strings = "NA", stringsAsFactors=T)
@@ -15,8 +26,7 @@ length(data[data$stalkroot == '?',]$stalkroot)
 table(data$stalkroot)
 
 
-library(ggplot2)
-library(cowplot)
+
 p1 = ggplot(aes(x=class), data=data)+geom_histogram(aes(fill=class))
 p2 = ggplot(aes(x=capshape), data=data)+geom_histogram(aes(fill=capshape))
 p3 = ggplot(aes(x=capsurface), data=data)+geom_histogram(aes(fill=capsurface))
@@ -49,41 +59,38 @@ p5 = ggplot(aes(x=habitat), data=data)+geom_histogram(aes(fill=habitat))
 plot_grid(p1,p2,p3,p4,p5,align = 'h')
 
 #Calculate Information Gain
-library(FSelector)
+
 infoGain = information.gain(class~.,data=data)
 infoGain.sorted = infoGain[order(infoGain$attr_importance,decreasing = T),, drop=F]
 
 GainRatio = gain.ratio(class~.,data=data)
 GainRatio.sorted = GainRatio[order(GainRatio$attr_importance),, drop=F]
 
-#==========================================================
-x1 = as.numeric(rownames(data[data$class  == 'e',]))
-y1 = sample(x1,replace=F,size = 0.6*length(x1))
-x2 = as.numeric(rownames(data[data$class  == 'p',]))
-y2 = sample(x2,replace=F,size = 0.6*length(x2))
-
-xTrain = data[c(y1,y2),-1]
-yTrain = data[c(y1,y2),1]
-xTest = data[c(setdiff(x1,y1),setdiff(x2,y2)),-1]
-yTest = data[c(setdiff(x1,y1),setdiff(x2,y2)),1]
-
-Train = data[c(y1,y2),]
-Test = data[c(setdiff(x1,y1),setdiff(x2,y2)),]
+#=================Train Test Split===================
+# x1 = as.numeric(rownames(data[data$class  == 'e',]))
+# y1 = sample(x1,replace=F,size = 0.6*length(x1))
+# x2 = as.numeric(rownames(data[data$class  == 'p',]))
+# y2 = sample(x2,replace=F,size = 0.6*length(x2))
+# 
+# xTrain = data[c(y1,y2),-1]
+# yTrain = data[c(y1,y2),1]
+# xTest = data[c(setdiff(x1,y1),setdiff(x2,y2)),-1]
+# yTest = data[c(setdiff(x1,y1),setdiff(x2,y2)),1]
+# 
+# Train = data[c(y1,y2),]
+# Test = data[c(setdiff(x1,y1),setdiff(x2,y2)),]
 
 
 trainIndex <- createDataPartition(data$class, p=0.60, list=FALSE)
 data_train <- data[trainIndex,]
 data_test <- data[-trainIndex,]
 
-#==================================Naive Bayes Classification ========================
+#===========================Naive Bayes Classification ========================
 
-model <- naiveBayes(class ~ ., data = data_train)
-predictions <- predict(model, data_test[,2:23])
-confusionMatrix(predictions, data_test$class)
+model_all <- naiveBayes(class ~ ., data = data_train)
+predictions <- predict(model_all, data_test[,2:23])
+mush_nb_all = confusionMatrix(predictions, data_test$class)$overall["Accuracy"]
 
-
-#model = train(xTrain,yTrain,'nb',trControl=trainControl(method='cv',number=10))
-#prop.table(table(predict(model$finalModel,xTest)$class,yTest))
 
 k_top_5 = rownames(head(infoGain.sorted,5))
 
@@ -92,7 +99,7 @@ data_test_5 = data_test[,c('class',k_top_5)]
 
 model_5 <- naiveBayes(class ~ ., data = data_train_5)
 predictions_5 <- predict(model_5, data_test[,2:6])
-confusionMatrix(predictions_5, data_test$class)
+mush_nb_5 = confusionMatrix(predictions_5, data_test$class)$overall["Accuracy"]
 
 
 k_top_10 = rownames(head(infoGain.sorted,10))
@@ -102,54 +109,32 @@ data_test_10 = data_test[,c('class',k_top_10)]
 
 model_10 <- naiveBayes(class ~ ., data = data_train_10)
 predictions_10 <- predict(model_10, data_test[,2:11])
-confusionMatrix(predictions_5, data_test$class)
+mush_nb_10 = confusionMatrix(predictions_5, data_test$class)$overall["Accuracy"]
 
 
 #==================================Decision Tree ================================================
 
-library(party)
-library(rpart)
-library(rattle)
-library(rpart.plot)
-library(RColorBrewer)
-tree = rpart(class ~ ., data = data_train, method = "class",control = rpart.control(cp = 0.005,minsplit=5))
-plot(tree)
-text(tree,pretty = 0)
-fancyRpartPlot(tree)
-printcp(tree)
-plotcp(tree)
+lc_tree = rpart(class ~ ., data = data_train, method = "class",control = rpart.control(cp = 0.05,minsplit=5))
+fancyRpartPlot(lc_tree)
+printcp(lc_tree)
+plotcp(lc_tree)
 #new.fit <- prp(tree,snip=TRUE)$obj
-ptree<- prune(tree,cp= tree$cptable[which.min(tree$cptable[,"xerror"]),"CP"])
+ptree<- prune(lc_tree,cp= tree$cptable[which.min(tree$cptable[,"xerror"]),"CP"])
 fancyRpartPlot(ptree, uniform=TRUE,main="Pruned Classification Tree")
 table(predict(ptree,data_test,type ='class'),data_test$class)
-1-mean(predict(ptree,data_test,type ='class') == data_test$class)
-summary(tree)
+low_accu = mean(predict(lc_tree,data_test,type ='class') == data_test$class)
+summary(lc_tree)
 
-
-tree1 = ctree(class~.,data= data_train)
-print(tree1)
-plot(tree1)
-plot(ptree,type = "simple")
-table(predict(tree1,data_test), data_test$class)
-1-mean(predict(tree1,data_test) == data_test$class)
-summary(tree1)
-
-
-
-tree2 = tree(class~.,data= data_train)
-summary(tree2)
-plot(tree2)
-text(tree2)
-table(predict(tree2,data_test,type = 'class'), data_test$class)
-1-mean(predict(tree2,data_test) == data_test$class)
-
-
-library(evtree)
-ev.raw = evtree(class~.,data= data_train)
-plot(ev.raw)
-table(predict(ev.raw,data_test), data_test$class)
-1-mean(predict(ev.raw,data_test) == data_test$class)
-summary(ev.raw)
+hc_tree = rpart(class ~ ., data = data_train, method = "class",control = rpart.control(cp = 0.0,minsplit=5))
+fancyRpartPlot(hc_tree)
+printcp(hc_tree)
+plotcp(hc_tree)
+#new.fit <- prp(tree,snip=TRUE)$obj
+ptree<- prune(hc_tree,cp= tree$cptable[which.min(tree$cptable[,"xerror"]),"CP"])
+fancyRpartPlot(ptree, uniform=TRUE,main="Pruned Classification Tree")
+table(predict(ptree,data_test,type ='class'),data_test$class)
+high_accu = mean(predict(hc_tree,data_test,type ='class') == data_test$class)
+summary(hc_tree)
 
 
 #==================================== Knn ==================================================
