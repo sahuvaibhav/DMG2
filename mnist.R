@@ -294,5 +294,5 @@ for(i in seq(0,8,by=1)){
 
 names(data_nb_accuracy) = c("Class_1","Class_2","Acc_All","Acc_LDA","Acc_PCA")
 
-write.csv(data_nb_accuracy,"NB_Acc.csv",row.names =F)
+write.csv(data_nb_accuracy,"mnist_NB_Acc.csv",row.names =F)
 

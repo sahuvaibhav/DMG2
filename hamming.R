@@ -18,32 +18,82 @@ similarity = function(x){
       return(as.matrix(y))
     }
 
-d= similarity(x)
+d= similarity(data)
 # Calculate distance and nearest neighbors
 library(e1071)
 d <- hamming.distance(x)
 
-
+train.set = row.names(data_train)
+test.set = row.names(data_test)
 # Predict class membership of the test set
 
+data_temp = data[c(1:100),]
+trainIndex <- createDataPartition(data_temp$class, p=0.60, list=FALSE)
+data_train <- data_temp[trainIndex,]
+data_test <- data_temp[-trainIndex,]
+
+
+
+
+
+myKnn = function(train,test,class,k){
+  if(ncol(train)!=ncol(test)){
+    print("Number of features in train and test datasets should be same.")
+  }
+  else if(nrow(train)!= length(class)){
+    print("Number of classse and number of rows in train datasets should be same.")
+  } else {
+    y=data.frame()
+    for(i in 1:nrow(test)){
+      for(j in 1:nrow(train)){
+        y[i,j] = sum(test[i,] == train[j,])/ncol(train)
+        
+      }
+    }
+    
+    NN <- t(apply(y, 1, function(x){order(x,decreasing=T)}))
+    pred <- apply(NN[, 1:k, drop=FALSE], 1, function(nn){
+      tab <- table(class[nn])
+      names(tab)[which.max(tab)]
+    })
+    return(pred)
+  }
+}
+
+
+pred = myKnn(data_train[,c(2:23)],data_test[,c(2:23)],data_train$class,k=1)
+accuracy_1 = confusionMatrix(pred, data_test$class)$overall["Accuracy"]
+
+
 myKnn = function(test.set,train.set,NN,k){
-  d = similarity(x)
+  d = similarity(data_temp)
   NN <- apply(d[train.set, test.set], 1, order)
   k <- 5
   pred <- apply(NN[, 1:k, drop=FALSE], 1, function(nn){
-    tab <- table(y[test.set][nn])
+    tab <- table(y[design.set][nn])
     as.integer(names(tab)[which.max(tab)])      
   })
   return(pred)
 }
 
-# Inspect the results
-table(pred, y[test.set])
 
-library(e1071)
-H <- hamming.distance(x) 
-x1 = c(1,0,0)
-x2 = c(1,1,0)
-sum(x1 == x2)/length(x1)
-x = data.frame(x1,x2)
-x
+
+
+similarity = function(x,y){
+  for 
+  
+  
+}
+
+
+for(i in 1:nrow(data_test)){
+  for( j in 1:nrow(data_train)){
+    
+    
+    
+  }
+  
+  
+}
+
+row.names(data_test)
